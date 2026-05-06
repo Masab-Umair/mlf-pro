@@ -281,16 +281,25 @@ if (empty($from)) {
             // MyListing uses both 'enter-hours' and 'open' for time ranges
             case 'enter-hours':
             case 'open':
-                if ($from !== '' && $to !== '') {
-                    $status_text = $from . ' – ' . $to;
-                } elseif ($from !== '') {
-                    $status_text = 'From ' . $from;
-                } elseif ($to !== '') {
-                    $status_text = 'Until ' . $to;
-                } else {
-                    $status_text = 'Hours not set';
-                }
-                break;
+            // MyListing stores times in a nested hours array
+            if (!empty($data['hours']) && is_array($data['hours'])) {
+                $slot = reset($data['hours']);
+                $from = $slot['from'] ?? '';
+                $to   = $slot['to']   ?? '';
+            }
+            // fallback to flat format
+            if (empty($from)) {
+                $from = $data['from'] ?? '';
+                $to   = $data['to']   ?? '';
+            }
+            if ($from && $to) {
+                $status_text = $from . ' – ' . $to;
+            } elseif ($from) {
+                $status_text = 'From ' . $from;
+            } else {
+                $status_text = 'Hours not set';
+            }
+            break;
 
             case 'closed':
                 $status_text = 'Closed';
@@ -518,14 +527,25 @@ add_action('wp_ajax_mlf_get_detail', function(){
                             $status_text = 'By Appointment Only';
                             break;
                         case 'enter-hours':
-                            if ($from && $to) {
-                                $status_text = $from . ' – ' . $to;
-                            } elseif ($from) {
-                                $status_text = 'From ' . $from;
-                            } else {
-                                $status_text = 'Hours not set';
-                            }
-                            break;
+                                // MyListing stores times in a nested hours array
+                                if (!empty($data['hours']) && is_array($data['hours'])) {
+                                    $slot = reset($data['hours']);
+                                    $from = $slot['from'] ?? '';
+                                    $to   = $slot['to']   ?? '';
+                                }
+                                // fallback to flat format
+                                if (empty($from)) {
+                                    $from = $data['from'] ?? '';
+                                    $to   = $data['to']   ?? '';
+                                }
+                                if ($from && $to) {
+                                    $status_text = $from . ' – ' . $to;
+                                } elseif ($from) {
+                                    $status_text = 'From ' . $from;
+                                } else {
+                                    $status_text = 'Hours not set';
+                                }
+                                break;
                         case 'closed':
                             $status_text = 'Closed';
                             break;
