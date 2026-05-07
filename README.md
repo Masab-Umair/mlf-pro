@@ -87,7 +87,7 @@ mlf-pro/
   </ol>
 
   <pre style="background:#f4f4f4; padding:10px; border-radius:8px;">
-git clone https://github.com/your-username/mlf-pro.git
+git clone https://github.com/Masab-Umair/mlf-pro.git
   </pre>
 
   <ol start="2">
