@@ -141,6 +141,28 @@ function mlfOptionsToArray(options) {
     });
 }
 
+function mlfSlugify(value) {
+    return String(value == null ? '' : value)
+        .toLowerCase()
+        .replace(/&amp;/g, 'and')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function mlfOptionSelected(option, values) {
+    var candidates = [
+        String(option.value),
+        String(option.label),
+        mlfSlugify(option.value),
+        mlfSlugify(option.label)
+    ];
+    
+    return values.some(function(value) {
+        value = String(value);
+        return candidates.indexOf(value) > -1 || candidates.indexOf(mlfSlugify(value)) > -1;
+    });
+}
+
 function mlfFieldType(field) {
     var type = (field && field.type ? field.type : 'text').toLowerCase();
     if (type === 'texteditor' || type === 'wp-editor' || type === 'paragraph') return 'textarea';
@@ -165,13 +187,15 @@ function mlfRenderMediaPreview(key, value, multiple) {
         }
     });
 
+    var accept = key === 'crimimal-records-check' || key === 'content-upload' ? '' : ' accept="image/*"';
+    var fileInput = '<input type="file" class="mlf-edit-input mlf-file-input"' + accept + (multiple ? ' multiple' : '') + '>';
+    var hiddenValue = '<input type="hidden" name="' + mlfEscapeHtml(key) + '" value="' + mlfEscapeHtml(values.join(', ')) + '">';
+
     if (multiple) {
-        return '<div class="mlf-media-preview">' + preview + '</div>' +
-            '<textarea name="' + mlfEscapeHtml(key) + '" rows="3" class="mlf-edit-input">' + mlfEscapeHtml(values.join('\n')) + '</textarea>';
+        return '<div class="mlf-media-preview">' + preview + '</div>' + hiddenValue + fileInput;
     }
 
-    return '<div class="mlf-media-preview">' + preview + '</div>' +
-        '<input type="url" name="' + mlfEscapeHtml(key) + '" value="' + mlfEscapeHtml(values[0] || value || '') + '" class="mlf-edit-input">';
+    return '<div class="mlf-media-preview">' + preview + '</div>' + hiddenValue + fileInput;
 }
 
 function mlfRenderWorkHours(key, value) {
@@ -250,7 +274,7 @@ function mlfRenderEditField(key, field, value) {
             html += '<input type="hidden" name="' + mlfEscapeHtml(key) + '" value="' + mlfEscapeHtml(values.join(', ')) + '" data-mlf-multi-value>';
             html += '<select multiple class="mlf-edit-input" data-mlf-multi-select' + required + '>';
             options.forEach(function(option) {
-                var selected = values.indexOf(String(option.value)) > -1 || values.indexOf(String(option.label)) > -1 ? ' selected' : '';
+                var selected = mlfOptionSelected(option, values) ? ' selected' : '';
                 html += '<option value="' + mlfEscapeHtml(option.value) + '"' + selected + '>' + mlfEscapeHtml(option.label) + '</option>';
             });
             if (!options.length && values.length) {
@@ -267,7 +291,7 @@ function mlfRenderEditField(key, field, value) {
                 options = values.map(function(item) { return { value: item, label: item }; });
             }
             options.forEach(function(option) {
-                var checked = values.indexOf(String(option.value)) > -1 || values.indexOf(String(option.label)) > -1 ? ' checked' : '';
+                var checked = mlfOptionSelected(option, values) ? ' checked' : '';
                 html += '<label class="mlf-choice"><input type="checkbox" value="' + mlfEscapeHtml(option.value) + '"' + checked + ' data-mlf-check-option> ' + mlfEscapeHtml(option.label) + '</label>';
             });
             html += '</div>';

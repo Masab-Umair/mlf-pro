@@ -10,6 +10,22 @@ function mlf_get_field_definitions() {
         $config = json_decode(file_get_contents($config_file), true);
         if (isset($config['fields']['used'])) {
             foreach ($config['fields']['used'] as $slug => $field) {
+                $options = $field['options'] ?? [];
+                
+                if (($field['type'] ?? '') === 'term-select' && !empty($field['taxonomy']) && taxonomy_exists($field['taxonomy'])) {
+                    $terms = get_terms([
+                        'taxonomy' => $field['taxonomy'],
+                        'hide_empty' => false,
+                    ]);
+                    
+                    if (!is_wp_error($terms)) {
+                        $options = [];
+                        foreach ($terms as $term) {
+                            $options[$term->name] = $term->name;
+                        }
+                    }
+                }
+                
                 $fields[$slug] = [
                     'slug' => $field['slug'] ?? $slug,
                     'type' => $field['type'] ?? 'text',
@@ -18,7 +34,8 @@ function mlf_get_field_definitions() {
                     'description' => $field['description'] ?? '',
                     'placeholder' => $field['placeholder'] ?? '',
                     'required' => $field['required'] ?? false,
-                    'options' => $field['options'] ?? [],
+                    'options' => $options,
+                    'taxonomy' => $field['taxonomy'] ?? '',
                     'terms-template' => $field['terms-template'] ?? '',
                     'multiple' => $field['multiple'] ?? false,
                 ];
