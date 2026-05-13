@@ -8,7 +8,7 @@
  */
 function mlfRenderValue(key, value) {
     // work_hours arrives pre-rendered with HTML from PHP
-    if (key === 'work_hours') {
+    if (mlfIsWorkHoursKey(key)) {
         return value || '';
     }
     var socialIcon=function(name){name=(name||'').toLowerCase(); var map={facebook:'bi bi-facebook',instagram:'bi bi-instagram',youtube:'bi bi-youtube',linkedin:'bi bi-linkedin',twitter:'bi bi-twitter-x',x:'bi bi-twitter-x',tiktok:'bi bi-tiktok',website:'bi bi-globe'}; return map[name]||'bi bi-link-45deg';};
@@ -106,6 +106,11 @@ function mlfRenderValue(key, value) {
         html += renderSingle(value);
     }
     return html;
+}
+
+function mlfIsWorkHoursKey(key) {
+    key = String(key || '').toLowerCase().replace(/[-_]/g, '');
+    return key === 'workhours' || key === 'hours';
 }
 
 function mlfEscapeHtml(value) {
@@ -433,7 +438,12 @@ function mlfRenderEditField(key, field, value) {
                                         ? data.labels[key]
                                         : key.replace(/-/g, ' ').replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
 
-                                    html += '<div class="mlf-detail-item"><label>' + label + '</label><span>' + mlfRenderValue(key, value) + '</span></div>';
+                                    var renderedValue = mlfRenderValue(key, value);
+                                    if (mlfIsWorkHoursKey(key)) {
+                                        html += '<div class="mlf-detail-item mlf-detail-item-work-hours"><label>' + label + '</label><div class="mlf-detail-work-hours">' + renderedValue + '</div></div>';
+                                    } else {
+                                        html += '<div class="mlf-detail-item"><label>' + label + '</label><span>' + renderedValue + '</span></div>';
+                                    }
                                 }
                             }
 
@@ -450,7 +460,12 @@ function mlfRenderEditField(key, field, value) {
                                 var mlbl = (data.labels && data.labels[k])
                                     ? data.labels[k]
                                     : k.replace(/-/g, ' ').replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
-                                html += '<div class="mlf-detail-item"><label>' + mlbl + '</label><span>' + mlfRenderValue(k, mv) + '</span></div>';
+                                var renderedMetaValue = mlfRenderValue(k, mv);
+                                if (mlfIsWorkHoursKey(k)) {
+                                    html += '<div class="mlf-detail-item mlf-detail-item-work-hours"><label>' + mlbl + '</label><div class="mlf-detail-work-hours">' + renderedMetaValue + '</div></div>';
+                                } else {
+                                    html += '<div class="mlf-detail-item"><label>' + mlbl + '</label><span>' + renderedMetaValue + '</span></div>';
+                                }
                             }
                         }
 

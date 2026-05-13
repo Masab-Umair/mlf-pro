@@ -291,6 +291,24 @@ body {
     word-break: break-word;
 }
 
+.mlf-detail-item-work-hours {
+    grid-column: 1 / -1;
+}
+
+.mlf-detail-item-work-hours:hover {
+    transform: none;
+}
+
+.mlf-detail-work-hours {
+    color: #222;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.mlf-detail-work-hours .c27-work-hours {
+    margin-top: 8px;
+}
+
 /* Image handling */
 .mlf-detail-item.mlf-image-item {
     background: #f8f9fa;

@@ -114,6 +114,90 @@ function mlf_get_edit_field_values($post_id, $meta, $field_definitions, $meta_ar
     return $edit_values;
 }
 
+function mlf_is_work_hours_field($key, $field = []) {
+    $type = isset($field['type']) ? $field['type'] : '';
+    $slug = isset($field['slug']) ? $field['slug'] : $key;
+
+    $normalize = function($value) {
+        return strtolower(str_replace(['-', '_'], '', (string) $value));
+    };
+
+    $work_hours_names = ['workhours', 'hours'];
+
+    return in_array($normalize($key), $work_hours_names, true)
+        || in_array($normalize($slug), $work_hours_names, true)
+        || in_array($normalize($type), $work_hours_names, true);
+}
+
+function mlf_get_mylisting_work_hours_template_path() {
+    $template_candidates = [
+        'templates/add-listing/form-fields/work-hours-field.php',
+        'templates/add-listing/form-fields/work_hours-field.php',
+        'templates/form-fields/work-hours-field.php',
+        'work-hours-field.php',
+    ];
+
+    if (function_exists('locate_template')) {
+        $located = locate_template($template_candidates, false, false);
+        if (!empty($located)) {
+            return $located;
+        }
+    }
+
+    $fallback_paths = [
+        MLF_PATH . 'templates/work-hours-field.php',
+        WP_PLUGIN_DIR . '/my-listing/templates/add-listing/form-fields/work-hours-field.php',
+        WP_PLUGIN_DIR . '/mylisting/templates/add-listing/form-fields/work-hours-field.php',
+        get_template_directory() . '/templates/add-listing/form-fields/work-hours-field.php',
+        get_stylesheet_directory() . '/templates/add-listing/form-fields/work-hours-field.php',
+    ];
+
+    foreach ($fallback_paths as $path) {
+        if (file_exists($path)) {
+            return $path;
+        }
+    }
+
+    return '';
+}
+
+function mlf_render_work_hours_field($value, $key = 'work_hours', $field = []) {
+    if (is_string($value)) {
+        $decoded = maybe_unserialize($value);
+        if ($decoded === $value) {
+            $json_decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $decoded = $json_decoded;
+            }
+        }
+        $value = $decoded;
+    }
+
+    if (!is_array($value) || empty($value)) {
+        return '';
+    }
+
+    if (!class_exists('MyListing\Src\Work_Hours')) {
+        return '';
+    }
+
+    $field = array_merge($field, [
+        'name' => $field['name'] ?? $key,
+        'slug' => $field['slug'] ?? $key,
+        'type' => $field['type'] ?? 'work-hours',
+        'value' => $value,
+    ]);
+
+    $template_path = mlf_get_mylisting_work_hours_template_path();
+    if (empty($template_path)) {
+        return '';
+    }
+
+    ob_start();
+    include $template_path;
+    return ob_get_clean();
+}
+
 // Helper function to make URLs clickable
 function mlf_make_links_clickable($text) {
     if (empty($text)) return $text;
@@ -298,6 +382,12 @@ class MLF_Dashboard {
             if (empty($value) && $value !== '0' && $value !== 0) {
                 return $value;
             }
+
+            $field_definitions = mlf_get_field_definitions();
+            $field = isset($field_definitions[$key]) ? $field_definitions[$key] : [];
+            if ($key && mlf_is_work_hours_field($key, $field)) {
+                return mlf_render_work_hours_field($value, $key, $field);
+            }
             
             // Convert 0/1 to Yes/No
             if ($value === '1' || $value === 1 || $value === 'true') {
@@ -426,7 +516,7 @@ return implode('<br>', $output);
             if(!in_array($k, ['_edit_lock', '_edit_last'])) {
                 $value = is_array($v) ? $v[0] : $v;
                 // Decode serialized PHP data
-                $meta_array[$k] = mlf_decode_value($value);
+                $meta_array[$k] = mlf_decode_value($value, $k);
             }
         }
         
@@ -473,6 +563,12 @@ add_action('wp_ajax_mlf_get_detail', function(){
     function mlf_decode_value($value, $key = '') {
         if (empty($value) && $value !== '0' && $value !== 0) {
             return $value;
+        }
+
+        $field_definitions = mlf_get_field_definitions();
+        $field = isset($field_definitions[$key]) ? $field_definitions[$key] : [];
+        if ($key && mlf_is_work_hours_field($key, $field)) {
+            return mlf_render_work_hours_field($value, $key, $field);
         }
         
         // Convert 0/1 to Yes/No
@@ -670,7 +766,7 @@ add_action('wp_ajax_mlf_get_detail', function(){
             // Skip empty values
             if(!empty($value) && $value !== '') {
                 // Decode serialized PHP data
-                $meta_array[$k] = mlf_decode_value($value);
+                $meta_array[$k] = mlf_decode_value($value, $k);
             }
         }
     }
